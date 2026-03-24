@@ -921,6 +921,7 @@ dependencies = [
  "anyhow",
  "axum",
  "crossterm",
+ "futures-core",
  "portable-pty",
  "serde",
  "serde_json",
