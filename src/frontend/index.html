@@ -1,1 +1,101 @@
-<!-- index -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Terminal</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a1a;
+      color: #e8e8e8;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 1rem;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    main { flex: 1; padding: 1rem; }
+
+    h1 { font-size: 1.25rem; margin-bottom: 1rem; }
+
+    section[aria-label="Terminal session"] {
+      overflow: auto;
+      max-height: calc(100vh - 6rem);
+      outline: none; /* tabindex=-1, no visible focus ring needed */
+    }
+
+    details { border-bottom: 1px solid #333; }
+
+    summary {
+      cursor: pointer;
+      padding: 0.5rem 0;
+      list-style: none; /* remove default triangle on some browsers */
+    }
+    summary::-webkit-details-marker { display: none; }
+
+    summary:focus-visible {
+      outline: 3px solid #ffff85;
+      outline-offset: 2px;
+    }
+
+    summary h2 {
+      display: inline;
+      font-size: 1rem;
+      font-weight: bold;
+      color: #aaffff;
+    }
+
+    details[open] summary h2::before { content: "▼ "; }
+    details:not([open]) summary h2::before { content: "▶ "; }
+
+    details p {
+      padding: 0.15rem 1.5rem;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    footer {
+      padding: 0.5rem 1rem;
+      border-top: 1px solid #333;
+      font-size: 0.875rem;
+    }
+
+    #connection-status { color: #aaffaa; }
+    #connection-status[data-state="disconnected"] { color: #ff8585; }
+    #connection-status[data-state="error"] { color: #ff8585; }
+    #connection-status[data-state="exited"] { color: #e8e8e8; }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Terminal</h1>
+    <section aria-label="Terminal session" tabindex="-1" id="session">
+    </section>
+  </main>
+
+  <div aria-live="polite" class="sr-only" id="announcer"></div>
+
+  <footer>
+    <div role="status" id="connection-status" data-state="connecting">Connecting…</div>
+  </footer>
+
+  <script src="/ansi.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
