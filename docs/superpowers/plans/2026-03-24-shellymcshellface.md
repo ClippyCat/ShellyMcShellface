@@ -136,7 +136,7 @@ cargo build
 ```
 Expected: compiles with no errors (warnings OK).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git init
@@ -151,7 +151,7 @@ git commit -m "feat: initial project scaffold"
 **Files:**
 - Modify: `src/types.rs`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `src/types.rs`:
 
@@ -206,14 +206,14 @@ mod tests {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```
 cargo test -p shellymcshellface types
 ```
 Expected: compile error — `SseEvent` not defined.
 
-- [ ] **Step 3: Implement types.rs**
+- [x] **Step 3: Implement types.rs**
 
 ```rust
 use serde::Serialize;
@@ -279,14 +279,14 @@ impl SseEvent {
 mod tests { /* ... paste tests from Step 1 above ... */ }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```
 cargo test -p shellymcshellface types
 ```
 Expected: 5 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/types.rs
@@ -300,7 +300,7 @@ git commit -m "feat: add SseEvent types with SSE serialisation"
 **Files:**
 - Modify: `src/line_editor.rs`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```rust
 #[cfg(test)]
@@ -379,14 +379,14 @@ mod tests {
 }
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```
 cargo test -p shellymcshellface line_editor
 ```
 Expected: compile error — `LineEditor` not defined.
 
-- [ ] **Step 3: Implement LineEditor**
+- [x] **Step 3: Implement LineEditor**
 
 ```rust
 pub struct LineEditor {
@@ -435,14 +435,14 @@ impl LineEditor {
 mod tests { /* paste tests from Step 1 */ }
 ```
 
-- [ ] **Step 4: Run to verify passing**
+- [x] **Step 4: Run to verify passing**
 
 ```
 cargo test -p shellymcshellface line_editor
 ```
 Expected: 9 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/line_editor.rs
@@ -458,7 +458,7 @@ git commit -m "feat: add LineEditor with backspace and empty-command handling"
 
 The stripping rule: keep CSI sequences ending in `m` (SGR — colour, bold, reset). Strip all other escape sequences: CSI sequences ending in other letters (`A`, `B`, `C`, `D`, `H`, `J`, `K`, `f`, `l`, `h`, `s`, `u`, etc.), OSC sequences (`\x1b]....\x07`), and bare `\x1b` + single char sequences.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```rust
 #[cfg(test)]
@@ -538,14 +538,14 @@ mod tests {
 }
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```
 cargo test -p shellymcshellface ansi
 ```
 Expected: compile error.
 
-- [ ] **Step 3: Implement strip_non_sgr**
+- [x] **Step 3: Implement strip_non_sgr**
 
 ```rust
 /// Strip all ANSI escape sequences except SGR (colour/bold — sequences ending in 'm').
@@ -614,14 +614,14 @@ pub fn strip_non_sgr(input: &str) -> String {
 mod tests { /* paste tests from Step 1 */ }
 ```
 
-- [ ] **Step 4: Run to verify passing**
+- [x] **Step 4: Run to verify passing**
 
 ```
 cargo test -p shellymcshellface ansi
 ```
 Expected: 13 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/ansi.rs
@@ -635,7 +635,7 @@ git commit -m "feat: add ANSI cursor-movement stripping, preserve SGR"
 **Files:**
 - Modify: `src/event_buffer.rs`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```rust
 #[cfg(test)]
@@ -677,14 +677,14 @@ mod tests {
 }
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```
 cargo test -p shellymcshellface event_buffer
 ```
 Expected: compile error.
 
-- [ ] **Step 3: Implement EventBuffer**
+- [x] **Step 3: Implement EventBuffer**
 
 ```rust
 use std::sync::Mutex;
@@ -715,14 +715,14 @@ mod tests { /* paste tests from Step 1 */ }
 
 Also add `#[derive(Clone)]` to `SseEvent` in `src/types.rs` (it already has it).
 
-- [ ] **Step 4: Run to verify passing**
+- [x] **Step 4: Run to verify passing**
 
 ```
 cargo test -p shellymcshellface event_buffer
 ```
 Expected: 3 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/event_buffer.rs src/types.rs
@@ -744,7 +744,7 @@ The server:
 
 The SSE handler subscribes to the broadcast channel first, then reads the buffer snapshot. This ensures no events are missed: any event pushed after subscribe (while we read the snapshot) will be in the receiver. The small theoretical window where the same event could appear in both snapshot and receiver is handled by noting the receiver only contains events pushed *after* subscribe, while the snapshot contains events pushed *before* we subscribed (the PTY lock ensures push→broadcast happens atomically from the SSE handler's perspective if we subscribe inside a buffer lock — but for simplicity in this local tool, accept the negligible overlap).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```rust
 #[cfg(test)]
@@ -782,14 +782,14 @@ mod tests {
 }
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```
 cargo test -p shellymcshellface server
 ```
 Expected: compile error.
 
-- [ ] **Step 3: Implement server.rs**
+- [x] **Step 3: Implement server.rs**
 
 ```rust
 use std::sync::Arc;
@@ -877,21 +877,21 @@ Add to `Cargo.toml`:
 futures-core = "0.3"
 ```
 
-- [ ] **Step 4: Run to verify passing**
+- [x] **Step 4: Run to verify passing**
 
 ```
 cargo test -p shellymcshellface server
 ```
 Expected: 2 tests pass.
 
-- [ ] **Step 5: Compile check**
+- [x] **Step 5: Compile check**
 
 ```
 cargo build
 ```
 Expected: builds (index.html/app.js/ansi.js are stubs, that's fine).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/server.rs Cargo.toml
@@ -915,7 +915,7 @@ The PTY task:
 
 This function is synchronous (blocking) — call it inside `tokio::task::spawn_blocking`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```rust
 #[cfg(test)]
@@ -981,14 +981,14 @@ mod tests {
 }
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```
 cargo test -p shellymcshellface pty
 ```
 Expected: compile error.
 
-- [ ] **Step 3: Implement pty.rs**
+- [x] **Step 3: Implement pty.rs**
 
 ```rust
 use std::io::{Read, Write};
@@ -1114,21 +1114,21 @@ mod tests { /* paste tests from Step 1 */ }
 
 Note: `portable_pty::ExitStatus::exit_code()` returns `u32`. Cast to `i32` for the payload. On Windows/Unix, typical exit codes fit in `i32`.
 
-- [ ] **Step 4: Run unit tests to verify passing**
+- [x] **Step 4: Run unit tests to verify passing**
 
 ```
 cargo test -p shellymcshellface pty
 ```
 Expected: 5 tests pass (the unit tests don't actually spawn a PTY).
 
-- [ ] **Step 5: Build check**
+- [x] **Step 5: Build check**
 
 ```
 cargo build
 ```
 Expected: compiles.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/pty.rs
@@ -1142,7 +1142,7 @@ git commit -m "feat: add PTY task with stdin forwarding and stdout line splittin
 **Files:**
 - Modify: `src/main.rs`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```rust
 #[cfg(test)]
@@ -1193,14 +1193,14 @@ mod tests {
 }
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```
 cargo test -p shellymcshellface main
 ```
 Expected: compile errors.
 
-- [ ] **Step 3: Implement main.rs**
+- [x] **Step 3: Implement main.rs**
 
 ```rust
 mod ansi;
@@ -1297,21 +1297,21 @@ async fn main() -> Result<()> {
 mod tests { /* paste tests from Step 1 */ }
 ```
 
-- [ ] **Step 4: Run to verify passing**
+- [x] **Step 4: Run to verify passing**
 
 ```
 cargo test -p shellymcshellface main
 ```
 Expected: 4 tests pass.
 
-- [ ] **Step 5: Build**
+- [x] **Step 5: Build**
 
 ```
 cargo build
 ```
 Expected: binary `ShellyMcShellface` produced in `target/debug/`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/main.rs
@@ -1325,7 +1325,7 @@ git commit -m "feat: add CLI arg parsing and main task orchestration"
 **Files:**
 - Modify: `src/frontend/index.html`
 
-- [ ] **Step 1: Write index.html**
+- [x] **Step 1: Write index.html**
 
 ```html
 <!DOCTYPE html>
@@ -1431,14 +1431,14 @@ git commit -m "feat: add CLI arg parsing and main task orchestration"
 </html>
 ```
 
-- [ ] **Step 2: Build and verify it compiles**
+- [x] **Step 2: Build and verify it compiles**
 
 ```
 cargo build
 ```
 Expected: compiles (index.html is now real content embedded into binary).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/frontend/index.html
@@ -1455,7 +1455,7 @@ git commit -m "feat: add accessible frontend HTML structure with sr-only, detail
 
 `parseAnsi(text)` returns an array of `{ text: string, style: string }` objects. `style` is a CSS inline style string (e.g. `"color:#ff8585;font-weight:bold"`). Plain text segments have `style: ""`. This keeps the parser pure and testable outside the browser.
 
-- [ ] **Step 1: Write the failing Node tests**
+- [x] **Step 1: Write the failing Node tests**
 
 ```javascript
 // tests/frontend/ansi.test.js
@@ -1545,14 +1545,14 @@ run('default fg (39) resets colour', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```
 node tests/frontend/ansi.test.js
 ```
 Expected: error — `parseAnsi` not exported.
 
-- [ ] **Step 3: Implement ansi.js**
+- [x] **Step 3: Implement ansi.js**
 
 ```javascript
 // src/frontend/ansi.js
@@ -1632,14 +1632,14 @@ if (typeof module !== 'undefined') {
 }
 ```
 
-- [ ] **Step 4: Run to verify passing**
+- [x] **Step 4: Run to verify passing**
 
 ```
 node tests/frontend/ansi.test.js
 ```
 Expected: all 11 tests show `PASS`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/frontend/ansi.js tests/frontend/ansi.test.js
@@ -1653,7 +1653,7 @@ git commit -m "feat: add ANSI SGR parser with AAA-compliant 16-colour palette"
 **Files:**
 - Modify: `src/frontend/app.js`
 
-- [ ] **Step 1: Write app.js**
+- [x] **Step 1: Write app.js**
 
 ```javascript
 // src/frontend/app.js
@@ -1783,14 +1783,14 @@ git commit -m "feat: add ANSI SGR parser with AAA-compliant 16-colour palette"
 })();
 ```
 
-- [ ] **Step 2: Build**
+- [x] **Step 2: Build**
 
 ```
 cargo build
 ```
 Expected: compiles.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/frontend/app.js
