@@ -6,6 +6,7 @@ pub enum StatusState {
     Connected,
     PtyExited,
     PtyError,
+    UserQuit,
 }
 
 #[derive(Clone, Debug)]
@@ -35,6 +36,10 @@ impl SseEvent {
 
     pub fn pty_error() -> Self {
         SseEvent::Status { state: StatusState::PtyError, code: None }
+    }
+
+    pub fn user_quit() -> Self {
+        SseEvent::Status { state: StatusState::UserQuit, code: None }
     }
 
     /// Returns (event_type, json_data_string) for SSE wire format.
@@ -101,6 +106,16 @@ mod tests {
         let ev = SseEvent::pty_exited(Some(0));
         let (_, data) = ev.to_sse_parts();
         let json: serde_json::Value = serde_json::from_str(&data).unwrap();
+        assert_eq!(json["code"], serde_json::Value::Null);
+    }
+
+    #[test]
+    fn test_status_user_quit_serialises() {
+        let ev = SseEvent::user_quit();
+        let (event_type, data) = ev.to_sse_parts();
+        assert_eq!(event_type, "status");
+        let json: serde_json::Value = serde_json::from_str(&data).unwrap();
+        assert_eq!(json["state"], "user_quit");
         assert_eq!(json["code"], serde_json::Value::Null);
     }
 }
