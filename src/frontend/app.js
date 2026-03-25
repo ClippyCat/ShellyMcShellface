@@ -142,12 +142,14 @@
     if (payload.state === 'connected') {
       setStatus('Connected', 'connected');
     } else if (payload.state === 'pty_exited') {
+      if (userQuit) return;
       if (payload.code && payload.code !== 0) {
         setStatus(`Process exited with error (code ${payload.code})`, 'exited');
       } else {
         setStatus('Process exited', 'exited');
       }
     } else if (payload.state === 'pty_error') {
+      if (userQuit) return;
       setStatus('Process failed to start', 'error');
     } else if (payload.state === 'user_quit') {
       userQuit = true;
