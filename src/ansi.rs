@@ -1,13 +1,19 @@
 /// Strip all ANSI escape sequences except SGR (colour/bold — sequences ending in 'm').
 /// SGR sequences are passed through intact.
+///
+/// Output is built into a `Vec<u8>` so that multi-byte UTF-8 sequences in the
+/// input are copied byte-for-byte rather than being corrupted by `byte as char`
+/// casts.  The result is always valid UTF-8 because:
+///   • non-ESC bytes are copied verbatim from the (valid UTF-8) input, and
+///   • kept ANSI sequences are ASCII and therefore also valid UTF-8.
 pub fn strip_non_sgr(input: &str) -> String {
     let bytes = input.as_bytes();
-    let mut out = String::with_capacity(input.len());
+    let mut out: Vec<u8> = Vec::with_capacity(input.len());
     let mut i = 0;
 
     while i < bytes.len() {
         if bytes[i] != 0x1b {
-            out.push(bytes[i] as char);
+            out.push(bytes[i]);
             i += 1;
             continue;
         }
@@ -18,20 +24,28 @@ pub fn strip_non_sgr(input: &str) -> String {
         }
         match bytes[i + 1] {
             b'[' => {
-                // CSI: consume ESC [ <params> <final>
-                // <params> = digits, semicolons, '?'
-                // <final> = 0x40-0x7e
+                // CSI: ESC [ <params> <intermediates> <final>
+                // Per ECMA-48:
+                //   parameter bytes:    0x30-0x3F  (0-9 : ; < = > ?)
+                //   intermediate bytes: 0x20-0x2F  (space ! " # $ % & ' ( ) * + , - . /)
+                //   final byte:         0x40-0x7E
                 let start = i;
                 i += 2;
-                while i < bytes.len() && (bytes[i].is_ascii_digit() || bytes[i] == b';' || bytes[i] == b'?') {
+                // consume parameter bytes
+                while i < bytes.len() && matches!(bytes[i], 0x30..=0x3F) {
                     i += 1;
                 }
-                if i < bytes.len() {
+                // consume intermediate bytes
+                while i < bytes.len() && matches!(bytes[i], 0x20..=0x2F) {
+                    i += 1;
+                }
+                // consume final byte
+                if i < bytes.len() && matches!(bytes[i], 0x40..=0x7E) {
                     let final_byte = bytes[i];
                     i += 1;
                     if final_byte == b'm' {
                         // SGR — keep the whole sequence
-                        out.push_str(&input[start..i]);
+                        out.extend_from_slice(&bytes[start..i]);
                     }
                     // otherwise discard
                 }
@@ -57,7 +71,8 @@ pub fn strip_non_sgr(input: &str) -> String {
             }
         }
     }
-    out
+    // SAFETY: see doc-comment above.
+    String::from_utf8(out).unwrap_or_default()
 }
 
 #[cfg(test)]

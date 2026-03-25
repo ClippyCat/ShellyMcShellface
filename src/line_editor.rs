@@ -7,6 +7,7 @@ impl LineEditor {
         LineEditor { buf: String::new() }
     }
 
+    #[cfg(test)]
     pub fn buffer(&self) -> &str {
         &self.buf
     }

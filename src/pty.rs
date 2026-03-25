@@ -75,12 +75,15 @@ pub fn run_pty_session(
         loop {
             let n = stdin.lock().read(&mut raw_buf)?;
             if n == 0 { break; }
-            let _ = pty_writer.write_all(&raw_buf[..n]);
+            // Emit input event BEFORE writing to PTY so it always arrives in the
+            // SSE stream ahead of the PTY echo output (which is generated only
+            // after the bytes reach the slave side).
             for &byte in &raw_buf[..n] {
                 if let Some(text) = line_editor.feed(byte) {
                     emit(SseEvent::input(text), &tx_stdin, &buf_stdin);
                 }
             }
+            let _ = pty_writer.write_all(&raw_buf[..n]);
         }
         Ok(())
     });
