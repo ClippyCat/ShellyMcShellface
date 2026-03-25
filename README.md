@@ -4,7 +4,7 @@ A Rust CLI tool that wraps any terminal command in a PTY and streams all output 
 
 ## Why
 
-PowerShell stops responding with large terminal output, and plain terminal output lacks semantic structure for screen reader users. ShellyMcShellface sends output to a browser page that groups each command's output under an accessible `<details>`/`<summary>` heading and maintains an `aria-live` region for incremental announcements. The page conforms to WCAG 2.1 Level AAA.
+PowerShell stops responding with large terminal output, and plain terminal output lacks semantic structure for screen reader users. ShellyMcShellface sends output to a browser page that groups each command's output under an accessible `<details>`/`<summary>` heading and maintains an `aria-live` region for incremental announcements.
 
 ## Usage
 
