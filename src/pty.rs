@@ -63,6 +63,8 @@ pub fn run_pty_session(
 
     emit(SseEvent::connected(), &tx, &buf);
 
+    let mut child_killer = child.clone_killer();
+
     // Stdin thread: raw mode, forward keystrokes to PTY, feed LineEditor
     let mut pty_writer = pair.master.take_writer()?;
     let tx_stdin = Arc::clone(&tx);
@@ -75,14 +77,25 @@ pub fn run_pty_session(
         loop {
             let n = stdin.lock().read(&mut raw_buf)?;
             if n == 0 { break; }
-            // Emit input event BEFORE writing to PTY so it always arrives in the
-            // SSE stream ahead of the PTY echo output (which is generated only
-            // after the bytes reach the slave side).
+
+            let mut quit = false;
             for &byte in &raw_buf[..n] {
+                if byte == 0x11 { // Ctrl+Q
+                    quit = true;
+                    break;
+                }
                 if let Some(text) = line_editor.feed(byte) {
                     emit(SseEvent::input(text), &tx_stdin, &buf_stdin);
                 }
             }
+
+            if quit {
+                emit(SseEvent::user_quit(), &tx_stdin, &buf_stdin);
+                let _ = child_killer.kill();
+                let _ = crossterm::terminal::disable_raw_mode();
+                std::process::exit(0);
+            }
+
             let _ = pty_writer.write_all(&raw_buf[..n]);
         }
         Ok(())
