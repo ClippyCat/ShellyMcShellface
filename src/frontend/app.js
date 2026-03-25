@@ -42,6 +42,7 @@
   let currentGroup = null;
   // True after each input event: skip the first output line (PTY echo of the command)
   let skipNextOutput = false;
+  let userQuit = false;
 
   // Produce readable plain text from raw PTY output.
   //
@@ -148,6 +149,9 @@
       }
     } else if (payload.state === 'pty_error') {
       setStatus('Process failed to start', 'error');
+    } else if (payload.state === 'user_quit') {
+      userQuit = true;
+      setStatus('Session ended', 'exited');
     }
   }
 
@@ -204,6 +208,7 @@
 
     es.onerror = () => {
       es.close(); // suppress automatic retry — would duplicate all DOM content
+      if (userQuit) return; // process was intentionally ended
       setStatus('Disconnected', 'disconnected');
       reconnectBtn.hidden = false;
       announcer.textContent = 'Connection lost. Reconnect button is now available in the footer.';
