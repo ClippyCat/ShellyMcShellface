@@ -55,6 +55,19 @@ pub fn strip_non_sgr(input: &str) -> String {
                         // return so the JS \r-overwrite pass keeps only the last rewrite of
                         // the line (e.g. tab-completion cycling in PowerShell/bash).
                         out.push(b'\r');
+                    } else if final_byte == b'K' && params == b"2" {
+                        // Erase entire line (ESC[2K) — PSReadLine emits this before
+                        // repainting the edit buffer during tab-completion cycling.  Treat as
+                        // carriage return so the JS \r-overwrite pass discards all
+                        // intermediate completion states and keeps only the final one.
+                        out.push(b'\r');
+                    } else if final_byte == b'H' {
+                        // Cursor absolute position (ESC[row;colH, or ESC[H = home).
+                        // Windows Console (non-PSReadLine) repositions the cursor to the
+                        // start of user input (e.g. ESC[19;21H) before writing each new
+                        // tab completion.  Treat as carriage return so the JS
+                        // \r-overwrite pass keeps only the final completion.
+                        out.push(b'\r');
                     } else {
                         // Other non-SGR CSI — emit a private-use placeholder (U+E000) so
                         // the JS layer can collapse runs to a single space gap.
@@ -136,6 +149,25 @@ mod tests {
         assert_eq!(strip_non_sgr("abc\x1b[2Gdef"), "abc\u{E000}def");
     }
 
+    // PSReadLine uses ESC[2K (erase entire line) + ESC[nG (column after prompt) when
+    // repainting the edit line during tab completion. ESC[2K must emit \r so the JS
+    // \r-overwrite pass discards all intermediate completion states, leaving only the last.
+    #[test]
+    fn test_erase_entire_line_emits_cr() {
+        assert_eq!(strip_non_sgr("abc\x1b[2Kdef"), "abc\rdef");
+    }
+
+    #[test]
+    fn test_tab_completion_cycle_overwrites() {
+        // Simulates PSReadLine tab cycling: ESC[2K + ESC[nG between each completion.
+        // ESC[2K → \r; ESC[27G (column > 1) → \uE000.
+        // The \r-overwrite pass in JS will keep only "comp3".
+        assert_eq!(
+            strip_non_sgr("comp1\x1b[2K\x1b[27Gcomp2\x1b[2K\x1b[27Gcomp3"),
+            "comp1\r\u{E000}comp2\r\u{E000}comp3"
+        );
+    }
+
     #[test]
     fn test_cursor_up_stripped() {
         assert_eq!(strip_non_sgr("a\x1b[Ab"), "a\u{E000}b");
@@ -152,8 +184,27 @@ mod tests {
     }
 
     #[test]
-    fn test_cursor_position_stripped() {
-        assert_eq!(strip_non_sgr("a\x1b[1;1Hb"), "a\u{E000}b");
+    fn test_cursor_position_emits_cr() {
+        // ESC[row;colH (cursor absolute position) → \r so the JS \r-overwrite pass
+        // treats each cursor-reposition as the start of a new line rewrite.
+        assert_eq!(strip_non_sgr("a\x1b[1;1Hb"), "a\rb");
+    }
+
+    #[test]
+    fn test_cursor_home_emits_cr() {
+        assert_eq!(strip_non_sgr("a\x1b[Hb"), "a\rb");
+    }
+
+    // Windows Console (non-PSReadLine) tab completion pattern:
+    //   hide-cursor + ESC[row;colH + show-cursor + new_completion
+    // The ESC[row;colH → \r so the JS \r-overwrite keeps only the final completion.
+    #[test]
+    fn test_windows_console_tab_completion_overwrites() {
+        // ESC[?25l → \uE000, ESC[19;21H → \r, ESC[?25h → \uE000
+        assert_eq!(
+            strip_non_sgr("comp1\x1b[?25l\x1b[19;21H\x1b[?25hcomp2\x1b[?25l\x1b[19;21H\x1b[?25hcomp3"),
+            "comp1\u{E000}\r\u{E000}comp2\u{E000}\r\u{E000}comp3"
+        );
     }
 
     #[test]
