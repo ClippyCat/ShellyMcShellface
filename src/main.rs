@@ -12,21 +12,21 @@ use crate::{event_buffer::EventBuffer, server::AppState, types::SseEvent};
 
 pub struct Args {
     pub command: Vec<String>,
-    pub port: u16,
+    pub port: Option<u16>,
 }
 
 pub fn parse_args(raw: Vec<String>) -> Result<Args> {
     let mut command = Vec::new();
-    let mut port: u16 = 7777;
+    let mut port: Option<u16> = None;
     let mut i = 1; // skip binary name
 
     while i < raw.len() {
         if raw[i] == "--port" {
             i += 1;
-            port = raw.get(i)
+            port = Some(raw.get(i)
                 .context("--port requires a value")?
                 .parse::<u16>()
-                .context("--port must be a number 1-65535")?;
+                .context("--port must be a number 1-65535")?);
         } else {
             command.push(raw[i].clone());
         }
@@ -38,6 +38,20 @@ pub fn parse_args(raw: Vec<String>) -> Result<Args> {
     }
 
     Ok(Args { command, port })
+}
+
+pub fn find_available_port(start: u16) -> u16 {
+    for port in start..=start.saturating_add(99) {
+        if std::net::TcpListener::bind(("127.0.0.1", port)).is_ok() {
+            return port;
+        }
+    }
+    eprintln!(
+        "No available port in range {}–{}",
+        start,
+        start.saturating_add(99)
+    );
+    std::process::exit(1);
 }
 
 #[tokio::main]
@@ -57,10 +71,15 @@ async fn main() -> Result<()> {
         event_buf: Arc::clone(&event_buf),
     };
 
+    let port = match args.port {
+        Some(p) => p,
+        None => find_available_port(7777),
+    };
+    eprintln!("Listening on http://localhost:{}", port);
+
     // Start HTTP server
-    let server_port = args.port;
     tokio::spawn(async move {
-        if let Err(e) = server::run_server(state, server_port).await {
+        if let Err(e) = server::run_server(state, port).await {
             eprintln!("Server error: {e}");
         }
     });
@@ -69,7 +88,7 @@ async fn main() -> Result<()> {
     tokio::time::sleep(std::time::Duration::from_millis(200)).await;
 
     // Open browser
-    let url = format!("http://localhost:{}", args.port);
+    let url = format!("http://localhost:{}", port);
     if let Err(e) = webbrowser::open(&url) {
         eprintln!("Could not open browser: {e}");
     }
@@ -100,7 +119,7 @@ mod tests {
             "hello".into(),
         ]).unwrap();
         assert_eq!(args.command, vec!["echo", "hello"]);
-        assert_eq!(args.port, 7777);
+        assert_eq!(args.port, None);
     }
 
     #[test]
@@ -111,7 +130,7 @@ mod tests {
             "8080".into(),
             "claude".into(),
         ]).unwrap();
-        assert_eq!(args.port, 8080);
+        assert_eq!(args.port, Some(8080));
         assert_eq!(args.command, vec!["claude"]);
     }
 
@@ -125,12 +144,29 @@ mod tests {
             "9000".into(),
         ]).unwrap();
         assert_eq!(args.command, vec!["ssh", "user@server"]);
-        assert_eq!(args.port, 9000);
+        assert_eq!(args.port, Some(9000));
     }
 
     #[test]
     fn test_parse_args_no_command_returns_error() {
         let result = parse_args(vec!["ShellyMcShellface".into()]);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_find_available_port_returns_bindable_port() {
+        let port = find_available_port(10000);
+        assert!(port >= 10000);
+        assert!(port <= 10099);
+        let result = std::net::TcpListener::bind(("127.0.0.1", port));
+        assert!(result.is_ok(), "returned port {} should be bindable", port);
+    }
+
+    #[test]
+    fn test_find_available_port_skips_occupied_port() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let occupied = listener.local_addr().unwrap().port();
+        let found = find_available_port(occupied);
+        assert_ne!(found, occupied, "should skip the occupied port");
     }
 }
