@@ -29,12 +29,13 @@ pub fn strip_non_sgr(input: &str) -> String {
                 //   parameter bytes:    0x30-0x3F  (0-9 : ; < = > ?)
                 //   intermediate bytes: 0x20-0x2F  (space ! " # $ % & ' ( ) * + , - . /)
                 //   final byte:         0x40-0x7E
-                let start = i;
                 i += 2;
+                let param_start = i;
                 // consume parameter bytes
                 while i < bytes.len() && matches!(bytes[i], 0x30..=0x3F) {
                     i += 1;
                 }
+                let param_end = i;
                 // consume intermediate bytes
                 while i < bytes.len() && matches!(bytes[i], 0x20..=0x2F) {
                     i += 1;
@@ -43,11 +44,22 @@ pub fn strip_non_sgr(input: &str) -> String {
                 if i < bytes.len() && matches!(bytes[i], 0x40..=0x7E) {
                     let final_byte = bytes[i];
                     i += 1;
+                    let params = &bytes[param_start..param_end];
                     if final_byte == b'm' {
                         // SGR — keep the whole sequence
-                        out.extend_from_slice(&bytes[start..i]);
+                        out.extend_from_slice(&bytes[param_start - 2..i]);
+                    } else if final_byte == b'G'
+                        && matches!(params, b"" | b"0" | b"1")
+                    {
+                        // Cursor to column 1 (ESC[G, ESC[0G, ESC[1G) — treat as carriage
+                        // return so the JS \r-overwrite pass keeps only the last rewrite of
+                        // the line (e.g. tab-completion cycling in PowerShell/bash).
+                        out.push(b'\r');
+                    } else {
+                        // Other non-SGR CSI — emit a private-use placeholder (U+E000) so
+                        // the JS layer can collapse runs to a single space gap.
+                        out.extend_from_slice("\u{E000}".as_bytes());
                     }
-                    // otherwise discard
                 }
             }
             b']' => {
@@ -105,23 +117,43 @@ mod tests {
     }
 
     #[test]
+    fn test_cursor_to_col1_default_emits_cr() {
+        assert_eq!(strip_non_sgr("abc\x1b[Gdef"), "abc\rdef");
+    }
+
+    #[test]
+    fn test_cursor_to_col1_explicit_emits_cr() {
+        assert_eq!(strip_non_sgr("abc\x1b[1Gdef"), "abc\rdef");
+    }
+
+    #[test]
+    fn test_cursor_to_col1_zero_emits_cr() {
+        assert_eq!(strip_non_sgr("abc\x1b[0Gdef"), "abc\rdef");
+    }
+
+    #[test]
+    fn test_cursor_to_col2_emits_placeholder() {
+        assert_eq!(strip_non_sgr("abc\x1b[2Gdef"), "abc\u{E000}def");
+    }
+
+    #[test]
     fn test_cursor_up_stripped() {
-        assert_eq!(strip_non_sgr("a\x1b[Ab"), "ab");
+        assert_eq!(strip_non_sgr("a\x1b[Ab"), "a\u{E000}b");
     }
 
     #[test]
     fn test_cursor_up_with_count_stripped() {
-        assert_eq!(strip_non_sgr("a\x1b[3Ab"), "ab");
+        assert_eq!(strip_non_sgr("a\x1b[3Ab"), "a\u{E000}b");
     }
 
     #[test]
     fn test_clear_screen_stripped() {
-        assert_eq!(strip_non_sgr("a\x1b[2Jb"), "ab");
+        assert_eq!(strip_non_sgr("a\x1b[2Jb"), "a\u{E000}b");
     }
 
     #[test]
     fn test_cursor_position_stripped() {
-        assert_eq!(strip_non_sgr("a\x1b[1;1Hb"), "ab");
+        assert_eq!(strip_non_sgr("a\x1b[1;1Hb"), "a\u{E000}b");
     }
 
     #[test]
@@ -131,7 +163,7 @@ mod tests {
 
     #[test]
     fn test_private_mode_stripped() {
-        assert_eq!(strip_non_sgr("\x1b[?25l"), "");
+        assert_eq!(strip_non_sgr("\x1b[?25l"), "\u{E000}");
     }
 
     #[test]
@@ -146,7 +178,7 @@ mod tests {
     fn test_mixed_sgr_and_cursor_movement() {
         assert_eq!(
             strip_non_sgr("\x1b[1mhello\x1b[A\x1b[0m"),
-            "\x1b[1mhello\x1b[0m"
+            "\x1b[1mhello\u{E000}\x1b[0m"
         );
     }
 }

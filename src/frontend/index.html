@@ -47,6 +47,28 @@
       outline-offset: 2px;
     }
 
+    .ctrl-mode-setting {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+      font-size: 0.875rem;
+    }
+
+    #ctrl-mode {
+      background: #1a1a1a;
+      border: 1px solid #555;
+      color: #e8e8e8;
+      font-family: inherit;
+      font-size: 0.875rem;
+      padding: 0.2rem 0.4rem;
+      border-radius: 3px;
+    }
+
+    #ctrl-mode:focus-visible {
+      outline: 3px solid #ffff85;
+      outline-offset: 2px;
+    }
+
     section[aria-label="Terminal session"] {
       overflow: auto;
       max-height: calc(100vh - 6rem);
@@ -130,6 +152,14 @@
     <div class="session-header">
       <h1>Terminal</h1>
       <button type="button" id="clear-btn">Clear session</button>
+      <div class="ctrl-mode-setting">
+        <label for="ctrl-mode">Control characters:</label>
+        <select id="ctrl-mode">
+          <option value="symbol">Symbols (^C)</option>
+          <option value="name">Names ([ETX])</option>
+          <option value="meaning">Meanings ([interrupt])</option>
+        </select>
+      </div>
     </div>
     <section aria-label="Terminal session" tabindex="-1" id="session">
     </section>

@@ -172,7 +172,7 @@ mod tests {
         process_stdout_chunk(b"a\x1b[Ab\n", &mut partial, &tx, &buf);
         let events = buf.snapshot();
         if let SseEvent::Output { text } = &events[0] {
-            assert_eq!(text, "ab\n");
+            assert_eq!(text, "a\u{E000}b\n");
         } else {
             panic!("expected Output event");
         }
